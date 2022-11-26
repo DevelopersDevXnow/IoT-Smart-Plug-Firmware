@@ -1,10 +1,10 @@
 
 /*
- * Author: Royston Sanctis
+ * Author: Royston Sanctis , Apoorva N
  * Date: 13 November 2022
  * Board ESP32 DEVKIT V1
  * Project: Smart Plug
- * Email: roystonsanctis@gmail.com
+ * Email: roystonsanctis@gmail.com , apoorvan721@gmail.com
  */
 
 #include <Arduino.h>
@@ -50,9 +50,11 @@ unsigned long count = 0;
 void setup()
 {
   // put your setup code here, to run once:
+  //Baud rate(Display in serial monitor)-How fast data needs to be sent
 
   Serial.begin(9600);
 
+  //.begin is to initialise wifi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
   while (WiFi.status() != WL_CONNECTED)
@@ -63,6 +65,9 @@ void setup()
   Serial.println();
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
+  Serial.println();
+  Serial.print("SSID: ");
+  Serial.print(WiFi.getHostname());
   Serial.println();
 
   Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
@@ -96,11 +101,17 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-
+  //Code will be excueting every 15 sec
   if (Firebase.ready() && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0))
   {
+    // Current time will be set to previous milli i.e, sendDataPrevMillis
+    sendDataPrevMillis = millis();
 
+    //Print in serial monitor 
+    //Set Integer Value
     Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, F("/test/int"), count) ? "ok" : fbdo.errorReason().c_str());
     Serial.println("");
+    //Increment Count
+    count++;
   }
 }
