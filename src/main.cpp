@@ -9,6 +9,9 @@
 
 #include <Arduino.h>
 
+#include "ZMPT101B.h"
+#include "ACS712.h"
+
 #if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
@@ -47,12 +50,44 @@ unsigned long sendDataPrevMillis = 0;
 
 unsigned long count = 0;
 
+// We have ZMPT101B sensor connected to A0 pin of arduino
+// Replace with your version if necessary
+ZMPT101B voltageSensor(32);
+
+// We have 30 amps version sensor connected to A0 pin of arduino
+// Replace with your version if necessary
+ACS712 currentSensor(ACS712_30A, 31);
+
+void CalibCurrent()
+{
+  Serial.println("Calibrating... Ensure that no current flows through the sensor at this moment");
+  currentSensor.calibrate();
+  Serial.println("Current Calibration Done!");
+}
+
+void CalibVoltage()
+{
+
+  Serial.println("Calibrating... Ensure that no current flows through the sensor at this moment");
+  delay(100);
+
+  voltageSensor.calibrate();
+  // Calculates sensitivity for 220V
+  Serial.print("Sensitivity= ");
+  Serial.println(voltageSensor.calculatesSensitivity(220.0), 8);
+  Serial.println("Voltage Calibration Done!");
+}
+
 void setup()
 {
   // put your setup code here, to run once:
-  //Baud rate(Display in serial monitor)-How fast data needs to be sent
+  // Baud rate(Display in serial monitor)-How fast data needs to be sent
 
   Serial.begin(9600);
+
+  // Caliberation Commands Need To Be Run On First Upload.
+  CalibCurrent();
+  CalibVoltage();
 
   //.begin is to initialise wifi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -101,17 +136,25 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  //Code will be excueting every 15 sec
-  if (Firebase.ready() && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0))
-  {
-    // Current time will be set to previous milli i.e, sendDataPrevMillis
-    sendDataPrevMillis = millis();
+  // Code will be excueting every 15 sec
+  // if (Firebase.ready() && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0))
+  // {
+  //   // Current time will be set to previous milli i.e, sendDataPrevMillis
+  //   sendDataPrevMillis = millis();
 
-    //Print in serial monitor 
-    //Set Integer Value
-    Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, F("/test/int"), count) ? "ok" : fbdo.errorReason().c_str());
-    Serial.println("");
-    //Increment Count
-    count++;
-  }
+  //   // Print in serial monitor
+  //   // Set Integer Value
+  //   Serial.printf("Set int... %s\n", Firebase.RTDB.setInt(&fbdo, F("/test/int"), count) ? "ok" : fbdo.errorReason().c_str());
+  //   Serial.println("");
+  //   // Increment Count
+  //   count++;
+  // }
+
+  float U = voltageSensor.getVoltageAC();
+  float I = currentSensor.getCurrentAC();
+
+  Serial.printf("Voltage=%f", U);
+
+  Serial.println("");
+  Serial.printf("Current=%f", I);
 }
